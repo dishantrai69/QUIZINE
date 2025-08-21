@@ -3,200 +3,151 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QUIZINE - AI Quiz</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=San+Francisco:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>QUIZINE</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'San Francisco', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f5f5f7;
-      overflow-x: hidden;
+    /* Reset */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f5f5f7; color: #1c1c1e; }
+
+    /* Header */
+    header { 
+      text-align: center; 
+      padding: 3rem 1rem 1rem 1rem; 
+      background: linear-gradient(to bottom, #ffffff, #f5f5f7); 
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
-    .card {
-      background: white;
-      border-radius: 24px;
-      padding: 2rem;
-      box-shadow: 0 12px 24px rgba(0,0,0,0.08);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    header h1 { font-weight: 700; font-size: 2.5rem; letter-spacing: 1px; }
+
+    /* Quiz Form */
+    #quizForm { 
+      max-width: 800px; 
+      margin: 2rem auto; 
+      background: #fff; 
+      padding: 2rem; 
+      border-radius: 20px; 
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
+      transition: transform 0.2s;
     }
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 16px 32px rgba(0,0,0,0.12);
+    #quizForm:hover { transform: translateY(-3px); }
+    input, select { 
+      padding: 0.7rem 1rem; 
+      margin-bottom: 1rem; 
+      border: 1px solid #d1d1d6; 
+      border-radius: 12px; 
+      width: 100%; 
+      font-size: 1rem;
+      outline: none;
     }
-    .optionBtn {
-      border-radius: 12px;
-      padding: 0.75rem 1rem;
-      background: #f0f0f5;
-      font-weight: 600;
-      transition: background 0.2s ease, transform 0.2s ease;
+    button { 
+      padding: 0.8rem 2rem; 
+      border: none; 
+      border-radius: 15px; 
+      background: #0071e3; 
+      color: white; 
+      font-size: 1rem; 
+      cursor: pointer; 
+      transition: background 0.2s;
     }
-    .optionBtn:hover {
-      background: #e0e0e5;
-      transform: scale(1.03);
+    button:hover { background: #005bb5; }
+
+    /* Quiz Display */
+    .quiz-container { margin: 2rem auto; max-width: 800px; }
+    .question-card { 
+      background: #fff; 
+      padding: 1.5rem; 
+      border-radius: 20px; 
+      margin-bottom: 1.5rem; 
+      box-shadow: 0 8px 20px rgba(0,0,0,0.05); 
+      transition: transform 0.2s;
     }
-    .progress {
-      background: #0071e3;
-      height: 6px;
-      border-radius: 3px;
-      transition: width 0.3s ease;
+    .question-card:hover { transform: translateY(-2px); }
+    .question-card h2 { margin-bottom: 1rem; font-size: 1.25rem; }
+    .options button { 
+      display: block; 
+      width: 100%; 
+      margin-bottom: 0.7rem; 
+      padding: 0.6rem 1rem; 
+      border-radius: 12px; 
+      border: 1px solid #d1d1d6; 
+      background: #f5f5f7; 
+      cursor: pointer; 
+      transition: background 0.2s, color 0.2s;
     }
-    .btnPrimary {
-      background: #0071e3;
-      color: white;
-      font-weight: 600;
-      padding: 0.75rem 1.5rem;
-      border-radius: 16px;
-      transition: background 0.2s ease, transform 0.2s ease;
-    }
-    .btnPrimary:hover {
-      background: #005bb5;
-      transform: scale(1.03);
-    }
-    .slideIn {
-      animation: slideIn 0.5s ease forwards;
-    }
-    .slideOut {
-      animation: slideOut 0.5s ease forwards;
-    }
-    @keyframes slideIn {
-      0% {opacity: 0; transform: translateX(100%);}
-      100% {opacity: 1; transform: translateX(0);}
-    }
-    @keyframes slideOut {
-      0% {opacity: 1; transform: translateX(0);}
-      100% {opacity: 0; transform: translateX(-100%);}
-    }
+    .options button:hover { background: #e0e0e0; }
+    .show-answer { margin-top: 0.5rem; display: none; font-weight: 600; color: #0071e3; }
+
+    /* Footer */
+    footer { text-align: center; padding: 2rem; color: #6e6e73; font-size: 0.9rem; }
   </style>
 </head>
-<body class="flex flex-col items-center justify-start min-h-screen p-6">
+<body>
 
-  <h1 class="text-5xl font-bold text-gray-900 mb-12">QUIZINE</h1>
+  <header>
+    <h1>QUIZINE</h1>
+  </header>
 
-  <!-- Quiz Form -->
-  <form id="quizForm" class="card w-full max-w-lg mb-8 flex flex-col gap-6">
-    <div>
-      <label class="block text-gray-700 font-semibold mb-2">Topic</label>
-      <input type="text" id="topic" placeholder="e.g. Football" class="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-gray-400" required>
-    </div>
-    <div>
-      <label class="block text-gray-700 font-semibold mb-2">Number of Questions</label>
-      <input type="number" id="numQuestions" value="5" min="1" max="20" class="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-gray-400" required>
-    </div>
-    <div>
-      <label class="block text-gray-700 font-semibold mb-2">Difficulty</label>
-      <select id="difficulty" class="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-gray-400">
-        <option value="easy">Easy</option>
-        <option value="medium" selected>Medium</option>
-        <option value="hard">Hard</option>
-      </select>
-    </div>
-    <button type="submit" class="btnPrimary self-start">Generate Quiz</button>
+  <form id="quizForm">
+    <input type="text" id="topic" placeholder="Enter quiz topic (e.g., football)">
+    <input type="number" id="numQuestions" placeholder="Number of questions" min="1" max="20">
+    <button type="submit">Generate Quiz</button>
   </form>
 
-  <!-- Quiz Container -->
-  <div id="quizContainer" class="w-full max-w-lg relative"></div>
+  <div class="quiz-container" id="quizContainer"></div>
 
-  <!-- Score Display -->
-  <div id="scoreContainer" class="hidden mt-6 card text-center text-2xl font-semibold text-gray-900"></div>
+  <footer>
+    &copy; 2025 QUIZINE | AI-Powered Quiz Generator
+  </footer>
 
   <script>
     const form = document.getElementById('quizForm');
     const quizContainer = document.getElementById('quizContainer');
-    const scoreContainer = document.getElementById('scoreContainer');
-
-    let quiz = [];
-    let currentQuestion = 0;
-    let score = 0;
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      quizContainer.innerHTML = '<p class="text-gray-500 animate-pulse">Generating quiz...</p>';
-      scoreContainer.classList.add('hidden');
-      currentQuestion = 0;
-      score = 0;
+      quizContainer.innerHTML = '<p style="text-align:center; color:#555;">Loading...</p>';
 
-      const topic = document.getElementById('topic').value.trim();
-      const numQuestions = parseInt(document.getElementById('numQuestions').value);
-      const difficulty = document.getElementById('difficulty').value;
+      const topic = document.getElementById('topic').value;
+      const numQuestions = document.getElementById('numQuestions').value;
 
       try {
-        const res = await fetch('/generate-quiz', {
+        const response = await fetch('/generate-quiz', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic, numQuestions, difficulty })
+          body: JSON.stringify({ topic, numQuestions })
         });
 
-        quiz = await res.json();
-        showQuestion();
+        const quiz = await response.json();
+        quizContainer.innerHTML = '';
+
+        quiz.forEach((q, index) => {
+          const card = document.createElement('div');
+          card.className = 'question-card';
+          card.innerHTML = `
+            <h2>${index + 1}. ${q.question}</h2>
+            <div class="options">
+              ${q.options.map(opt => `<button>${opt}</button>`).join('')}
+            </div>
+            <div class="show-answer">Answer: ${q.correctAnswer}</div>
+          `;
+          quizContainer.appendChild(card);
+
+          const buttons = card.querySelectorAll('.options button');
+          const showAnswer = card.querySelector('.show-answer');
+          buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+              showAnswer.style.display = 'block';
+              buttons.forEach(b => b.style.backgroundColor = b.textContent === q.correctAnswer ? '#34c759' : '#ff3b30');
+            });
+          });
+        });
+
       } catch (err) {
-        quizContainer.innerHTML = '<p class="text-red-500">Failed to generate quiz. Try again.</p>';
+        quizContainer.innerHTML = '<p style="text-align:center; color:red;">Error generating quiz.</p>';
         console.error(err);
       }
     });
-
-    function showQuestion() {
-      if (currentQuestion >= quiz.length) {
-        quizContainer.innerHTML = '';
-        displayScore();
-        return;
-      }
-
-      const q = quiz[currentQuestion];
-      const card = document.createElement('div');
-      card.className = 'card slideIn absolute w-full';
-      card.innerHTML = `
-        <h2 class="text-xl font-semibold mb-4">Q${currentQuestion+1}: ${q.question}</h2>
-        <div class="flex flex-col gap-3 mb-4">
-          ${q.options.map(opt => `<button class="optionBtn w-full">${opt}</button>`).join('')}
-        </div>
-        <div class="w-full bg-gray-300 rounded-full h-2">
-          <div class="progress" style="width: ${(currentQuestion/quiz.length)*100}%"></div>
-        </div>
-      `;
-      quizContainer.innerHTML = '';
-      quizContainer.appendChild(card);
-
-      const buttons = card.querySelectorAll('.optionBtn');
-      buttons.forEach(btn => btn.addEventListener('click', () => selectAnswer(btn.innerText, card)));
-    }
-
-    function selectAnswer(answer, card) {
-      if (answer === quiz[currentQuestion].correctAnswer) score++;
-      card.classList.remove('slideIn');
-      card.classList.add('slideOut');
-      setTimeout(() => {
-        currentQuestion++;
-        showQuestion();
-      }, 400);
-    }
-
-    function displayScore() {
-      scoreContainer.innerHTML = `
-        <h2 class="text-3xl font-bold mb-4">Quiz Finished!</h2>
-        <p class="mb-4">Your Score: <span class="text-blue-600">${score} / ${quiz.length}</span></p>
-        <button class="btnPrimary" onclick="reviewAnswers()">Review Answers</button>
-      `;
-      scoreContainer.classList.remove('hidden');
-    }
-
-    function reviewAnswers() {
-      quizContainer.innerHTML = '';
-      quiz.forEach((q, i) => {
-        const card = document.createElement('div');
-        card.className = 'card mb-4';
-        card.innerHTML = `
-          <h3 class="text-lg font-semibold mb-2">Q${i+1}: ${q.question}</h3>
-          <ul class="list-disc pl-5">
-            ${q.options.map(opt => {
-              let color = opt === q.correctAnswer ? 'text-green-600 font-semibold' : '';
-              return `<li class="${color}">${opt}</li>`;
-            }).join('')}
-          </ul>
-        `;
-        quizContainer.appendChild(card);
-      });
-      scoreContainer.classList.add('hidden');
-    }
   </script>
+
 </body>
 </html>

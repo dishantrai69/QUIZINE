@@ -8,24 +8,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-const API_KEY = "AIzaSyBIegE8t8lWsPbJzt-FHBx5DxpfWsjqF3g";
-
-// Helper to generate fallback questions
-function generateFallbackQuestions(topic, numQuestions) {
-  const sampleOptions = [
-    "Option A", "Option B", "Option C", "Option D"
-  ];
-
-  return Array.from({ length: numQuestions }, (_, i) => ({
-    question: `Question ${i + 1} about ${topic}?`,
-    options: sampleOptions.sort(() => Math.random() - 0.5), // shuffle options
-    correctAnswer: sampleOptions[0] // first option is correct
-  }));
-}
+const API_KEY = "AIzaSyBIegE8t8lWsPbJzt-FHBx5DxpfWsjqF3g"; // Replace with your key
 
 app.post("/generate-quiz", async (req, res) => {
-  const { topic, numQuestions, difficulty } = req.body;
-  console.log("Quiz request:", topic, numQuestions, difficulty);
+  const { topic, numQuestions } = req.body;
+  console.log("Quiz request:", topic, numQuestions);
 
   try {
     const response = await fetch(
@@ -36,8 +23,8 @@ app.post("/generate-quiz", async (req, res) => {
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: `Generate exactly ${numQuestions} multiple-choice questions about "${topic}" with "${difficulty}" difficulty.
-Return only a JSON array in this format: [{"question":"...","options":["..."],"correctAnswer":"..."}]. 
+              text: `Generate exactly ${numQuestions} multiple-choice questions about "${topic}". 
+Return only a JSON array with this format: [{"question":"...","options":["..."],"correctAnswer":"..."}]. 
 Do not include any extra text or explanation.`
             }]
           }]
@@ -50,22 +37,30 @@ Do not include any extra text or explanation.`
 
     if (data.candidates && data.candidates.length > 0) {
       let quizText = data.candidates[0].content.parts[0].text;
-      quizText = quizText.replace(/^```json/, '').replace(/```$/, '').trim();
+      // Remove backticks if present
+      quizText = quizText.replace(/```json|```/g, "").trim();
 
       try {
         const quiz = JSON.parse(quizText);
         return res.json(quiz);
       } catch (e) {
-        console.error("Failed to parse AI response, using fallback:", e);
-        return res.json(generateFallbackQuestions(topic, numQuestions));
+        console.error("Failed to parse AI response, sending fallback:", e);
       }
     }
 
-    res.json(generateFallbackQuestions(topic, numQuestions));
+    res.json(Array.from({length: numQuestions}, (_, i) => ({
+      question: `Sample question ${i+1}?`,
+      options: ["Option 1","Option 2","Option 3","Option 4"],
+      correctAnswer: "Option 1"
+    })));
 
   } catch (err) {
-    console.error("Error generating quiz, using fallback:", err);
-    res.json(generateFallbackQuestions(topic, numQuestions));
+    console.error("Error generating quiz:", err);
+    res.json(Array.from({length: numQuestions}, (_, i) => ({
+      question: `Sample question ${i+1}?`,
+      options: ["Option 1","Option 2","Option 3","Option 4"],
+      correctAnswer: "Option 1"
+    })));
   }
 });
 
