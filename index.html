@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QUIZINE - AI Quiz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=San+Francisco:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'San Francisco', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      overflow-x: hidden;
+    }
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 2rem;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 16px 32px rgba(0,0,0,0.12);
+    }
+    .optionBtn {
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      background: #f0f0f5;
+      font-weight: 600;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .optionBtn:hover {
+      background: #e0e0e5;
+      transform: scale(1.03);
+    }
+    .progress {
+      background: #0071e3;
+      height: 6px;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .btnPrimary {
+      background: #0071e3;
+      color: white;
+      font-weight: 600;
+      padding: 0.75rem 1.5rem;
+      border-radius: 16px;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .btnPrimary:hover {
+      background: #005bb5;
+      transform: scale(1.03);
+    }
+    .slideIn {
+      animation: slideIn 0.5s ease forwards;
+    }
+    .slideOut {
+      animation: slideOut 0.5s ease forwards;
+    }
+    @keyframes slideIn {
+      0% {opacity: 0; transform: translateX(100%);}
+      100% {opacity: 1; transform: translateX(0);}
+    }
+    @keyframes slideOut {
+      0% {opacity: 1; transform: translateX(0);}
+      100% {opacity: 0; transform: translateX(-100%);}
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-start min-h-screen p-6">
+
+  <h1 class="text-5xl font-bold text-gray-900 mb-12">QUIZINE</h1>
+
+  <!-- Quiz Form -->
+  <form id="quizForm" class="card w-full max-w-lg mb-8 flex flex-col gap-6">
+    <div>
+      <label class="block text-gray-700 font-semibold mb-2">Topic</label>
+      <input type="text" id="topic" placeholder="e.g. Football" class="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-gray-400" required>
+    </div>
+    <div>
+      <label class="block text-gray-700 font-semibold mb-2">Number of Questions</label>
+      <input type="number" id="numQuestions" value="5" min="1" max="20" class="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-gray-400" required>
+    </div>
+    <div>
+      <label class="block text-gray-700 font-semibold mb-2">Difficulty</label>
+      <select id="difficulty" class="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-gray-400">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+    <button type="submit" class="btnPrimary self-start">Generate Quiz</button>
+  </form>
+
+  <!-- Quiz Container -->
+  <div id="quizContainer" class="w-full max-w-lg relative"></div>
+
+  <!-- Score Display -->
+  <div id="scoreContainer" class="hidden mt-6 card text-center text-2xl font-semibold text-gray-900"></div>
+
+  <script>
+    const form = document.getElementById('quizForm');
+    const quizContainer = document.getElementById('quizContainer');
+    const scoreContainer = document.getElementById('scoreContainer');
+
+    let quiz = [];
+    let currentQuestion = 0;
+    let score = 0;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      quizContainer.innerHTML = '<p class="text-gray-500 animate-pulse">Generating quiz...</p>';
+      scoreContainer.classList.add('hidden');
+      currentQuestion = 0;
+      score = 0;
+
+      const topic = document.getElementById('topic').value.trim();
+      const numQuestions = parseInt(document.getElementById('numQuestions').value);
+      const difficulty = document.getElementById('difficulty').value;
+
+      try {
+        const res = await fetch('/generate-quiz', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic, numQuestions, difficulty })
+        });
+
+        quiz = await res.json();
+        showQuestion();
+      } catch (err) {
+        quizContainer.innerHTML = '<p class="text-red-500">Failed to generate quiz. Try again.</p>';
+        console.error(err);
+      }
+    });
+
+    function showQuestion() {
+      if (currentQuestion >= quiz.length) {
+        quizContainer.innerHTML = '';
+        displayScore();
+        return;
+      }
+
+      const q = quiz[currentQuestion];
+      const card = document.createElement('div');
+      card.className = 'card slideIn absolute w-full';
+      card.innerHTML = `
+        <h2 class="text-xl font-semibold mb-4">Q${currentQuestion+1}: ${q.question}</h2>
+        <div class="flex flex-col gap-3 mb-4">
+          ${q.options.map(opt => `<button class="optionBtn w-full">${opt}</button>`).join('')}
+        </div>
+        <div class="w-full bg-gray-300 rounded-full h-2">
+          <div class="progress" style="width: ${(currentQuestion/quiz.length)*100}%"></div>
+        </div>
+      `;
+      quizContainer.innerHTML = '';
+      quizContainer.appendChild(card);
+
+      const buttons = card.querySelectorAll('.optionBtn');
+      buttons.forEach(btn => btn.addEventListener('click', () => selectAnswer(btn.innerText, card)));
+    }
+
+    function selectAnswer(answer, card) {
+      if (answer === quiz[currentQuestion].correctAnswer) score++;
+      card.classList.remove('slideIn');
+      card.classList.add('slideOut');
+      setTimeout(() => {
+        currentQuestion++;
+        showQuestion();
+      }, 400);
+    }
+
+    function displayScore() {
+      scoreContainer.innerHTML = `
+        <h2 class="text-3xl font-bold mb-4">Quiz Finished!</h2>
+        <p class="mb-4">Your Score: <span class="text-blue-600">${score} / ${quiz.length}</span></p>
+        <button class="btnPrimary" onclick="reviewAnswers()">Review Answers</button>
+      `;
+      scoreContainer.classList.remove('hidden');
+    }
+
+    function reviewAnswers() {
+      quizContainer.innerHTML = '';
+      quiz.forEach((q, i) => {
+        const card = document.createElement('div');
+        card.className = 'card mb-4';
+        card.innerHTML = `
+          <h3 class="text-lg font-semibold mb-2">Q${i+1}: ${q.question}</h3>
+          <ul class="list-disc pl-5">
+            ${q.options.map(opt => {
+              let color = opt === q.correctAnswer ? 'text-green-600 font-semibold' : '';
+              return `<li class="${color}">${opt}</li>`;
+            }).join('')}
+          </ul>
+        `;
+        quizContainer.appendChild(card);
+      });
+      scoreContainer.classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

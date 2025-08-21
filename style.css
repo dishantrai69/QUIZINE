@@ -1,0 +1,9 @@
+body { font-family: Arial; background: #f4f4f4; display: flex; justify-content: center; align-items: flex-start; padding-top: 50px; }
+.container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 500px; text-align: center; }
+input, button { padding: 10px; margin: 5px; border-radius: 6px; border: 1px solid #ccc; }
+button { cursor: pointer; background: #007bff; color: white; border: none; }
+#quiz { margin-top: 20px; text-align: left; }
+.question { font-weight: bold; margin-top: 10px; }
+.option { margin-left: 20px; padding: 2px; }
+.correct { background-color: #d4edda; }
+.wrong { background-color: #f8d7da; }
