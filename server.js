@@ -1,18 +1,31 @@
+require('dotenv').config();  // Load environment variables from .env
 const express = require('express');
 const fetch = require('node-fetch');
 const cors = require('cors');
 const path = require('path');
 
 const app = express();
-app.use(cors());
+
+// Middleware
+app.use(cors({ origin: '*' }));  // Allow all origins, adjust if needed
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Use environment variable for API key
-const API_KEY = "AIzaSyBIegE8t8lWsPbJzt-FHBx5DxpfWsjqF3g";
+// Environment Variables
+const API_KEY = process.env.GEMINI_API_KEY;
+if (!API_KEY) {
+  console.error("❌ Missing GEMINI_API_KEY in .env file");
+  process.exit(1);
+}
 
+// API Endpoint to Generate Quiz
 app.post("/generate-quiz", async (req, res) => {
-  const { topic, numQuestions } = req.body;
+  const { topic, numQuestions = 5, difficulty = "easy" } = req.body;
+
+  // Basic validation
+  if (!topic || !numQuestions) {
+    return res.status(400).json({ error: "Missing topic or numQuestions" });
+  }
 
   try {
     const response = await fetch(
@@ -23,9 +36,9 @@ app.post("/generate-quiz", async (req, res) => {
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: `Generate exactly ${numQuestions} multiple-choice questions about "${topic}". 
-Return only a JSON array in this format: [{"question":"...","options":["..."],"correctAnswer":"..."}]. 
-Do not include any extra text or explanation.`
+              text: `Generate exactly ${numQuestions} multiple-choice questions about "${topic}" with ${difficulty} difficulty.
+Return only a JSON array in this format:
+[{"question":"...","options":["..."],"correctAnswer":"..."}]`
             }]
           }]
         })
@@ -34,41 +47,45 @@ Do not include any extra text or explanation.`
 
     const data = await response.json();
 
-    if (data.candidates && data.candidates.length > 0) {
-      let quizText = data.candidates[0].content.parts[0].text;
-
-      // Remove ```json ``` if AI wraps it
+    // Check AI response
+    if (data.candidates?.length > 0) {
+      let quizText = data.candidates[0].content.parts[0].text.trim();
       quizText = quizText.replace(/```json|```/g, '').trim();
 
       try {
         const quiz = JSON.parse(quizText);
-        return res.json(quiz);
-      } catch (e) {
-        console.error("Failed to parse AI response, sending fallback:", e);
+        if (Array.isArray(quiz)) {
+          return res.json(quiz);
+        }
+      } catch (parseError) {
+        console.error("❌ Failed to parse AI JSON:", parseError.message);
       }
     }
 
-    // Fallback
-    res.json(Array.from({ length: numQuestions }, (_, i) => ({
-      question: `Sample question ${i + 1}?`,
-      options: ["Option 1","Option 2","Option 3","Option 4"],
-      correctAnswer: "Option 1"
-    })));
+    // Fallback questions if AI fails
+    console.warn("⚠️ Using fallback quiz questions");
+    return res.json(getFallbackQuiz(numQuestions));
 
   } catch (err) {
-    console.error("Error generating quiz:", err);
-    res.json(Array.from({ length: numQuestions }, (_, i) => ({
-      question: `Sample question ${i + 1}?`,
-      options: ["Option 1","Option 2","Option 3","Option 4"],
-      correctAnswer: "Option 1"
-    })));
+    console.error("❌ Error generating quiz:", err.message);
+    return res.json(getFallbackQuiz(numQuestions));
   }
 });
 
+// SPA fallback to index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Use Render port or default 5001
+// Fallback Quiz Generator
+function getFallbackQuiz(num) {
+  return Array.from({ length: num }, (_, i) => ({
+    question: `Sample Question ${i + 1}?`,
+    options: ["Option 1", "Option 2", "Option 3", "Option 4"],
+    correctAnswer: "Option 1"
+  }));
+}
+
+// Start Server
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
